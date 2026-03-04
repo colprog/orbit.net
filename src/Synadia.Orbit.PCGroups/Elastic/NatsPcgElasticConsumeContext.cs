@@ -456,19 +456,25 @@ internal sealed class NatsPcgElasticConsumeContext<T> : IAsyncEnumerable<NatsPcg
         return true;
     }
 
+#if !NET6_0_OR_GREATER
     // ReSharper disable once StaticMemberInGenericType
     private static readonly Random s_random = new();
+#endif
 
     private static TimeSpan GetBackoffDelay()
     {
         // Random delay between min and max reconnect delay
+        int minDelayMs = (int)NatsPcgConstants.MinReconnectDelay.TotalMilliseconds;
+        int maxDelayMs = (int)NatsPcgConstants.MaxReconnectDelay.TotalMilliseconds;
+#if NET6_0_OR_GREATER
+        int delayMs = Random.Shared.Next(minDelayMs, maxDelayMs);
+#else
         int delayMs;
         lock (s_random)
         {
-            delayMs = s_random.Next(
-                (int)NatsPcgConstants.MinReconnectDelay.TotalMilliseconds,
-                (int)NatsPcgConstants.MaxReconnectDelay.TotalMilliseconds);
+            delayMs = s_random.Next(minDelayMs, maxDelayMs);
         }
+#endif
 
         return TimeSpan.FromMilliseconds(delayMs);
     }
